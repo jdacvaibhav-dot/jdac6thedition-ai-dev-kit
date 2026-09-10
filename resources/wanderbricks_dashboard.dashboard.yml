@@ -1,0 +1,8 @@
+resources:
+  dashboards:
+    wanderbricks_gold:
+      display_name: "Wanderbricks Bookings"
+      file_path: ../src/dashboards/wanderbricks_gold.lvdash.json
+      warehouse_id: ${resources.sql_warehouses.wanderbricks_warehouse.id}
+      dataset_catalog: ${var.catalog}
+      dataset_schema: ${resources.schemas.wanderbricks.name}
