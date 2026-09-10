@@ -1,0 +1,15 @@
+resources:
+  jobs:
+    wanderbricks_gold_job:
+      name: wanderbricks_gold_job
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${resources.schemas.wanderbricks.name}
+
+      tasks:
+        - task_key: refresh_wanderbricks_gold_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.wanderbricks_gold_pipeline.id}
