@@ -1,0 +1,42 @@
+bundle:
+  name: jdac6thedition_ai_dev_kit
+  uuid: e1d95424-624e-4003-b28b-e88d2a5c418d
+
+include:
+  - resources/*.yml
+
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
+variables:
+  catalog:
+    description: The catalog to use
+  run_as_service_principal:
+    description: Application ID of the service principal that prod resources run as
+    lookup:
+      service_principal: databricks_user_group_job_sp
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-7405607396630555.15.azuredatabricks.net
+    variables:
+      catalog: databricks_user_group_aitoolkit
+  prod:
+    mode: production
+    git:
+      branch: main
+    workspace:
+      host: https://adb-7405607396630555.15.azuredatabricks.net
+      root_path: /Workspace/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: ${var.run_as_service_principal}
+    variables:
+      catalog: databricks_user_group_aitoolkit
+    permissions:
+      - user_name: bjamrozik@origindigital.com
+        level: CAN_MANAGE
