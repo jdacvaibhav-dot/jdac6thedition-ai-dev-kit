@@ -23,7 +23,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://adb-7405607396630555.15.azuredatabricks.net
+      profile: DEFAULT
     variables:
       catalog: databricks_user_group_aitoolkit
     resources:
@@ -41,7 +41,7 @@ targets:
     git:
       branch: main
     workspace:
-      host: https://adb-7405607396630555.15.azuredatabricks.net
+      profile: DEFAULT
       root_path: /Workspace/.bundle/${bundle.name}/${bundle.target}
     run_as:
       service_principal_name: ${var.run_as_service_principal}
