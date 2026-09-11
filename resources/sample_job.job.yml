@@ -12,7 +12,7 @@ resources:
         - name: catalog
           default: ${var.catalog}
         - name: schema
-          default: ${resources.schemas.wanderbricks.name}
+          default: ${resources.schemas.jdac6thedition_ai_dev_kit.name}
 
       tasks:
         - task_key: notebook_task
@@ -28,7 +28,7 @@ resources:
               - "--catalog"
               - "${var.catalog}"
               - "--schema"
-              - "${resources.schemas.wanderbricks.name}"
+              - "${resources.schemas.jdac6thedition_ai_dev_kit.name}"
           environment_key: default
         - task_key: refresh_pipeline
           depends_on:

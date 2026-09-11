@@ -3,7 +3,7 @@ resources:
     jdac6thedition_ai_dev_kit_etl:
       name: jdac6thedition_ai_dev_kit_etl
       catalog: ${var.catalog}
-      schema: ${resources.schemas.wanderbricks.name}
+      schema: ${resources.schemas.jdac6thedition_ai_dev_kit.name}
       serverless: true
       root_path: "../src/jdac6thedition_ai_dev_kit_etl"
 
