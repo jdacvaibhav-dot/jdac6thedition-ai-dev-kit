@@ -10,7 +10,7 @@
   "data_sources": {
     "tables": [
       {
-        "identifier": "databricks_user_group_aitoolkit.wanderbricks.bookings_gold",
+        "identifier": "databricks_user_group_aitoolkit.dev_bjamrozik_wanderbricks.bookings_gold",
         "column_configs": [
           {"column_name": "__END_AT", "description": ["SCD Type 2: timestamp this row's status stopped being current. NULL means this is the current row for the booking."]},
           {"column_name": "__START_AT", "description": ["SCD Type 2: timestamp this row's status became effective."]},
@@ -25,17 +25,17 @@
       {
         "id": "a2000000000000000000000000000001",
         "question": ["What's our total revenue by destination?"],
-        "sql": ["SELECT destination, SUM(total_amount) AS revenue FROM databricks_user_group_aitoolkit.wanderbricks.bookings_gold WHERE __END_AT IS NULL GROUP BY destination ORDER BY revenue DESC"]
+        "sql": ["SELECT destination, SUM(total_amount) AS revenue FROM databricks_user_group_aitoolkit.dev_bjamrozik_wanderbricks.bookings_gold WHERE __END_AT IS NULL GROUP BY destination ORDER BY revenue DESC"]
       },
       {
         "id": "a2000000000000000000000000000002",
         "question": ["How many bookings are confirmed vs. cancelled this month?"],
-        "sql": ["SELECT status, COUNT(*) AS bookings FROM databricks_user_group_aitoolkit.wanderbricks.bookings_gold WHERE __END_AT IS NULL AND DATE_TRUNC('MONTH', __START_AT) = DATE_TRUNC('MONTH', CURRENT_DATE()) GROUP BY status"]
+        "sql": ["SELECT status, COUNT(*) AS bookings FROM databricks_user_group_aitoolkit.dev_bjamrozik_wanderbricks.bookings_gold WHERE __END_AT IS NULL AND DATE_TRUNC('MONTH', __START_AT) = DATE_TRUNC('MONTH', CURRENT_DATE()) GROUP BY status"]
       },
       {
         "id": "a2000000000000000000000000000003",
         "question": ["Which properties have the most bookings?"],
-        "sql": ["SELECT property_id, COUNT(*) AS bookings FROM databricks_user_group_aitoolkit.wanderbricks.bookings_gold WHERE __END_AT IS NULL GROUP BY property_id ORDER BY bookings DESC LIMIT 20"]
+        "sql": ["SELECT property_id, COUNT(*) AS bookings FROM databricks_user_group_aitoolkit.dev_bjamrozik_wanderbricks.bookings_gold WHERE __END_AT IS NULL GROUP BY property_id ORDER BY bookings DESC LIMIT 20"]
       }
     ],
     "text_instructions": [
