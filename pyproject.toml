@@ -1,0 +1,25 @@
+[project]
+name = "jdac6thedition_ai_dev_kit"
+version = "0.0.1"
+authors = [{ name = "bjamrozik@origindigital.com" }]
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "databricks-dlt",
+    "databricks-connect>=16.4,<16.5",
+    "ipykernel",
+]
+
+[project.scripts]
+main = "jdac6thedition_ai_dev_kit.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120

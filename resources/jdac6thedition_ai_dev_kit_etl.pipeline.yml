@@ -1,0 +1,16 @@
+resources:
+  pipelines:
+    jdac6thedition_ai_dev_kit_etl:
+      name: jdac6thedition_ai_dev_kit_etl
+      catalog: ${var.catalog}
+      schema: ${resources.schemas.wanderbricks.name}
+      serverless: true
+      root_path: "../src/jdac6thedition_ai_dev_kit_etl"
+
+      libraries:
+        - glob:
+            include: ../src/jdac6thedition_ai_dev_kit_etl/transformations/**
+
+      environment:
+        dependencies:
+          - --editable ${workspace.file_path}
