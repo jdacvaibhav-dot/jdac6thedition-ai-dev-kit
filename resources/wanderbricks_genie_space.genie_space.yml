@@ -1,8 +1,0 @@
-resources:
-  genie_spaces:
-    wanderbricks_genie_space:
-      title: "Wanderbricks Bookings"
-      description: "Ask questions about Wanderbricks booking revenue, status, and property demand using the bookings_gold CDC/SCD2 table."
-      parent_path: /Workspace/Users/bjamrozik@origindigital.com/genie_spaces
-      warehouse_id: ${resources.sql_warehouses.wanderbricks_warehouse.id}
-      file_path: ../src/genie/wanderbricks_gold.geniespace.json

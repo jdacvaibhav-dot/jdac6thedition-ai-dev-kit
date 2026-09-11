@@ -26,20 +26,8 @@ targets:
       profile: DEFAULT
     variables:
       catalog: databricks_user_group_aitoolkit
-    resources:
-      genie_spaces:
-        wanderbricks_genie_space:
-          # mode: development prefixes the UC schema name (e.g.
-          # dev_<user>_wanderbricks) but Genie space table identifiers must be
-          # fully-qualified literal strings inside the serialized JSON body —
-          # bundle variable substitution is not applied to genie_space
-          # file_path content. Use a dev-specific file with the resolved dev
-          # schema name hardcoded; prod keeps the unprefixed original file.
-          file_path: src/genie/wanderbricks_gold.dev.geniespace.json
   prod:
     mode: production
-    git:
-      branch: main
     workspace:
       profile: DEFAULT
       root_path: /Workspace/.bundle/${bundle.name}/${bundle.target}
