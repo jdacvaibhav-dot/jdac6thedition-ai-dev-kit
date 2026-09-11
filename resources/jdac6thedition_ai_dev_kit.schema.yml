@@ -8,3 +8,4 @@ resources:
         - principal: wanderbricks-viewers
           privileges:
             - SELECT
+            - USE_SCHEMA
