@@ -1,17 +1,13 @@
 # Demo Prompts
 
-Presenter crib sheet — the exact prompts to give the coding agent, in order, for the
-live Wanderbricks build. Each prompt assumes the agent has already read `AGENTS.md`
-and installed the Databricks AI Tools (Section 1). Keep prompts close to this wording:
-each one states the outcome and target pattern, not the steps to get there, so the
-agent still has to figure out the schema shape and implementation details live — that's
-the point — while the demo stays inside the time box.
+Presenter crib sheet — the prompts to give the coding agent, in order, for the
+live Wanderbricks build.
 
 ---
 
 ### 1. Install & Configure (~2 min)
 
-Not an agent prompt — run this yourself in the terminal:
+Run this yourself in the terminal:
 
 ```
 databricks aitools install --scope project
@@ -23,10 +19,7 @@ it to `user-invocable-only` so only project-relevant skills auto-trigger. Mentio
 
 ### 2. Plan and build the whole thing
 
-Lean on the planning skills instead of a single do-everything prompt — this is itself a
-best-practices beat worth narrating (plan first, then execute via subagents). Fold
-governance, the dashboard, and the Genie space into the same planning prompt so the
-plan covers the full lifecycle, not just the pipeline.
+Lean on the planning skills instead of a single do-everything prompt.
 
 > Build a solution on the `samples.wanderbricks` schema in my Databricks environment
 > that solves the following, and use your writing-plans skill to write a plan for it
@@ -39,8 +32,8 @@ plan covers the full lifecycle, not just the pipeline.
 >    `databricks_user_group_job_sp` service principal and refuse to deploy unless the
 >    current branch is `main`.
 > 3. Granting read access on the resulting schema to a group called
->    `wanderbricks-viewers` — declared in the bundle, not applied by hand — such that
->    they can actually query the gold table, with nothing outside the schema affected.
+>    `wanderbricks-viewers` such that they can actually query the gold table, with 
+>    nothing outside the schema affected.
 > 4. An AI/BI dashboard on the gold table with two charts: revenue by destination
 >    (current bookings only), and booking status over time.
 > 5. A Genie agent over the gold table so someone on the business side could ask
@@ -48,21 +41,12 @@ plan covers the full lifecycle, not just the pipeline.
 
 Once the plan is written, hand it off:
 
-> Execute this plan using subagent-driven-development.
+> Execute this plan using subagent-driven-development, referencing Databricks skills as needed.
 
 Let the agent genuinely discover the shape of `booking_updates` (diff feed vs. full-row
 snapshot) and the right destination-name column on its own while it plans — don't hint
 at the answer. The "refuse to deploy unless on `main`" clause is what should land as
-the `git: branch: main` guard under `prod` — see "Moments that land" below.
-
-**If it stalls, nudge:**
-
-- Two CDC sources into one target → "two Auto CDC flows can target the same streaming
-  table — one per source."
-- Governance plan only grants `SELECT` → "would a member of that group actually be able
-  to run a query right now?" — steer it toward `USE_SCHEMA` (and `USE_CATALOG` at the
-  catalog level) if it doesn't get there on its own. This is a genuine, previously-hit
-  gap worth surfacing live.
+the `git: branch: main` guard under `prod`.
 
 ### 3. Deploy and run dev
 
