@@ -1,0 +1,17 @@
+resources:
+  dashboards:
+    wanderbricks_bookings:
+      display_name: Wanderbricks Bookings
+      # User-approved grant (explicit, out of normal scope): wanderbricks-viewers
+      # needs CAN_READ here to actually view this dashboard, alongside its UC
+      # read access on the gold table declared in resources/wanderbricks.schema.yml.
+      permissions:
+        - level: CAN_READ
+          group_name: wanderbricks-viewers
+      file_path: ./wanderbricks_bookings.lvdash.json
+      warehouse_id: ${resources.sql_warehouses.wanderbricks_bi.id}
+      dataset_catalog: ${var.catalog}
+      dataset_schema: ${resources.schemas.wanderbricks.name}
+      # ${workspace.resource_path} (not file_path) is the DAB-managed location for
+      # non-file resources such as dashboards.
+      parent_path: ${workspace.resource_path}

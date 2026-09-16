@@ -1,7 +1,5 @@
 .databricks/
 .claude/settings.local.json
-build/
-dist/
 __pycache__/
 *.egg-info
 .venv/
@@ -10,3 +8,4 @@ scratch/**
 **/explorations/**
 **/!explorations/README.md
 .superpowers/
+~$*

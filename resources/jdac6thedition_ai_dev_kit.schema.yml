@@ -1,6 +1,0 @@
-resources:
-  schemas:
-    jdac6thedition_ai_dev_kit:
-      catalog_name: ${var.catalog}
-      name: jdac6thedition_ai_dev_kit
-      comment: Default schema for the jdac6thedition_ai_dev_kit bundle.

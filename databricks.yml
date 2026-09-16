@@ -5,11 +5,6 @@ bundle:
 include:
   - resources/*.yml
 
-artifacts:
-  python_artifact:
-    type: whl
-    build: uv build --wheel
-
 variables:
   catalog:
     description: The catalog to use
@@ -17,10 +12,16 @@ variables:
     description: Application ID of the service principal that prod resources run as
     lookup:
       service_principal: databricks_user_group_job_sp
+  wanderbricks_schema:
+    description: Schema that holds the Wanderbricks booking-status-history datasets
+    default: wanderbricks
 
 targets:
   dev:
     mode: development
+    # mode: development scopes the deployment to the user's own workspace namespace
+    # (/Workspace/Users/bjamrozik@origindigital.com/.bundle/...) and prefixes every
+    # resource name and the UC schema name with dev_bjamrozik_.
     default: true
     workspace:
       profile: DEFAULT
@@ -33,6 +34,10 @@ targets:
       root_path: /Workspace/.bundle/${bundle.name}/${bundle.target}
     run_as:
       service_principal_name: ${var.run_as_service_principal}
+    # With mode: production set, this git branch guard makes the CLI refuse
+    # `databricks bundle deploy -t prod` from any branch other than main.
+    git:
+      branch: main
     variables:
       catalog: databricks_user_group_aitoolkit
     permissions:

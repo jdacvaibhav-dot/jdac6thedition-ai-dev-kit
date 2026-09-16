@@ -1,0 +1,12 @@
+resources:
+  pipelines:
+    wanderbricks_etl:
+      name: wanderbricks_etl
+      catalog: ${var.catalog}
+      schema: ${resources.schemas.wanderbricks.name}
+      serverless: true
+      root_path: "../src/wanderbricks_etl"
+
+      libraries:
+        - glob:
+            include: ../src/wanderbricks_etl/transformations/**

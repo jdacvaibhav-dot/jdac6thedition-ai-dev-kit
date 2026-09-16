@@ -1,0 +1,205 @@
+resources:
+  genie_spaces:
+    wanderbricks_bookings_agent:
+      title: Wanderbricks Bookings
+      # User-approved grant (explicit, out of normal scope): wanderbricks-viewers
+      # needs CAN_RUN here to actually use this space, alongside its UC read
+      # access on the gold table declared in resources/wanderbricks.schema.yml.
+      permissions:
+        - level: CAN_RUN
+          group_name: wanderbricks-viewers
+      description: >-
+        Natural-language questions about Wanderbricks booking status history,
+        destinations, and revenue. Backed by the booking_status_gold SCD Type 2
+        table: one row per status version per booking.
+      warehouse_id: ${resources.sql_warehouses.wanderbricks_bi.id}
+      # ${workspace.resource_path} is the DAB-managed location for non-file
+      # resources; it keeps the space inside the target's own namespace.
+      parent_path: ${workspace.resource_path}
+      # Inline serialized_space (NOT file_path): a file_path .geniespace.json is
+      # copied verbatim with no ${...} substitution, but the table identifier must
+      # be fully qualified and differs between dev (dev_bjamrozik_wanderbricks)
+      # and prod (wanderbricks). Inline YAML is interpolated first, then marshalled
+      # to JSON, so this resource is target-portable.
+      serialized_space:
+        version: 2
+        config:
+          # sample_questions must be sorted by id; ids are 32-char lowercase hex,
+          # unique across sample_questions AND example_question_sqls.
+          sample_questions:
+            - id: 2a7f6bb880c449679359c1dc8a2c1271
+              question:
+                - Which destinations generate the most revenue?
+            - id: 9933c497d1a147f3b339c903533172fa
+              question:
+                - What is the current status breakdown of bookings?
+            - id: 9b158005b997425587e50931dc9d77f0
+              question:
+                - How many bookings were cancelled in 2025?
+            - id: bc01f69f62eb44da95c5b50933d6ac83
+              question:
+                - Show me the full status history for one booking in order.
+            - id: e7544252f1694813a79c1c01b7411330
+              question:
+                - What were the booking statuses as of 1 January 2025?
+        data_sources:
+          tables:
+            - identifier: ${var.catalog}.${resources.schemas.wanderbricks.name}.booking_status_gold
+              # column_configs must be sorted by column_name. Entity matching and
+              # format assistance are enabled only on the low-cardinality
+              # categorical dimensions a business user names directly.
+              column_configs:
+                - column_name: booking_id
+                  description:
+                    - Stable identifier of a booking. It repeats across rows - one row per status version of that booking.
+                  synonyms:
+                    - reservation id
+                - column_name: continent
+                  description:
+                    - Continent of the booked property.
+                  enable_entity_matching: true
+                  enable_format_assistance: true
+                  synonyms:
+                    - region
+                - column_name: country
+                  description:
+                    - Country of the booked property.
+                  enable_entity_matching: true
+                  enable_format_assistance: true
+                  synonyms:
+                    - nation
+                - column_name: destination
+                  description:
+                    - Destination city or resort area of the booked property. 42 distinct values, never NULL.
+                  enable_entity_matching: true
+                  enable_format_assistance: true
+                  synonyms:
+                    - city
+                    - location
+                    - market
+                    - place
+                - column_name: is_current_status
+                  description:
+                    - TRUE marks the booking's latest status version - the one row per booking that reflects its status today.
+                    - Exactly one row per booking has is_current_status = TRUE; all superseded versions are FALSE.
+                    - Filter is_current_status = true for any current-state count, revenue total, or status breakdown.
+                  synonyms:
+                    - current
+                    - latest version
+                - column_name: previous_status
+                  description:
+                    - The status this booking held immediately before the status on this same row. NULL on the first version.
+                  synonyms:
+                    - prior status
+                - column_name: property_type
+                  description:
+                    - Type of property booked, for example apartment or villa.
+                  enable_entity_matching: true
+                  enable_format_assistance: true
+                  synonyms:
+                    - accommodation type
+                    - listing type
+                - column_name: status
+                  description:
+                    - Booking status for this version - one of pending, confirmed, cancelled, completed.
+                  enable_entity_matching: true
+                  enable_format_assistance: true
+                  synonyms:
+                    - booking state
+                    - state
+                - column_name: status_end_ts
+                  description:
+                    - Exclusive end of this status version's validity window. NULL means the version is still in effect (is_current_status = TRUE).
+                    - The row is valid when status_start_ts <= D AND (status_end_ts > D OR status_end_ts IS NULL).
+                  synonyms:
+                    - valid to
+                - column_name: status_sequence
+                  description:
+                    - 1-based ordinal of this status version within the booking. ORDER BY status_sequence to replay a booking's history.
+                  synonyms:
+                    - version number
+                - column_name: status_start_ts
+                  description:
+                    - Inclusive start of this status version's validity window - when the booking entered this status.
+                    - For the 24,541 bookings with no updates, this is stamped from the bookings source's updated_at (a snapshot time), not the true status-entry time.
+                    - Spans 2022-12-27 to 2025-07-31.
+                  synonyms:
+                    - status date
+                    - valid from
+                - column_name: total_amount
+                  description:
+                    - Total monetary value of the whole booking, not a per-night rate. Do not multiply by nights.
+                    - Stored as single-precision FLOAT - aggregate as SUM(CAST(total_amount AS DECIMAL(20,2))) for stable totals.
+                  synonyms:
+                    - booking value
+                    - revenue
+                    - spend
+        instructions:
+          # example_question_sqls must be sorted by id. Every column is prefixed
+          # with the table alias - bare columns raise
+          # "Table name or alias is required for column" at runtime.
+          example_question_sqls:
+            - id: cda37d4d8ad24773becc5650f6fcaf06
+              question:
+                - Which destinations generate the most revenue?
+              sql:
+                - >-
+                  SELECT booking_status_gold.destination, COUNT(*) AS bookings,
+                  SUM(CAST(booking_status_gold.total_amount AS DECIMAL(20,2))) AS total_revenue
+                  FROM ${var.catalog}.${resources.schemas.wanderbricks.name}.booking_status_gold AS booking_status_gold
+                  WHERE booking_status_gold.is_current_status = true
+                  GROUP BY booking_status_gold.destination
+                  ORDER BY total_revenue DESC
+                  LIMIT 10
+              usage_guidance:
+                - Current-state aggregation. is_current_status = true collapses the Type 2 history to one row per booking so revenue is not multiplied by status changes.
+            - id: db9e797cc99d4818880988b90a10ad19
+              question:
+                - How many bookings changed into each status by month in 2025?
+              sql:
+                - >-
+                  SELECT date_trunc('MONTH', booking_status_gold.status_start_ts) AS status_month,
+                  booking_status_gold.status, COUNT(*) AS status_changes
+                  FROM ${var.catalog}.${resources.schemas.wanderbricks.name}.booking_status_gold AS booking_status_gold
+                  WHERE booking_status_gold.status_start_ts >= '2025-01-01'
+                  GROUP BY date_trunc('MONTH', booking_status_gold.status_start_ts), booking_status_gold.status
+                  ORDER BY status_month, booking_status_gold.status
+              usage_guidance:
+                - Trend over time counts status transitions, so it deliberately does NOT filter is_current_status. Each row is one booking entering that status in that month.
+            - id: ebbaabcdd70440e38fa019444e000279
+              question:
+                - What were the booking statuses as of 1 January 2025?
+              sql:
+                - >-
+                  SELECT booking_status_gold.status, COUNT(*) AS bookings,
+                  SUM(CAST(booking_status_gold.total_amount AS DECIMAL(20,2))) AS total_revenue
+                  FROM ${var.catalog}.${resources.schemas.wanderbricks.name}.booking_status_gold AS booking_status_gold
+                  WHERE booking_status_gold.status_start_ts <= TIMESTAMP '2025-01-01'
+                  AND (booking_status_gold.status_end_ts > TIMESTAMP '2025-01-01'
+                  OR booking_status_gold.status_end_ts IS NULL)
+                  GROUP BY booking_status_gold.status
+                  ORDER BY bookings DESC
+              usage_guidance:
+                - Point-in-time pattern. Replace both literals with the asked-for date. Use this shape - never is_current_status - whenever the question names a past date.
+          # At most one text_instructions item is allowed by the API.
+          text_instructions:
+            - id: f513924f85784ff988843de01ff8a9d7
+              content:
+                - |-
+                  ## PURPOSE
+                  - Answer business questions about Wanderbricks bookings, destinations, and booking revenue for non-technical users.
+                  - The only source, booking_status_gold, is an SCD Type 2 history: one row per status VERSION per booking, not one row per booking.
+
+                  ## DISAMBIGUATION
+                  - For any question about "current", "today", "now", "active", or any total revenue or booking count, filter is_current_status = true. Without it, revenue and counts are multiplied by the number of status changes each booking went through.
+                  - For "as of date D", select the version valid at D: status_start_ts <= D AND (status_end_ts > D OR status_end_ts IS NULL). Do not use is_current_status for a past date.
+                  - To replay one booking's history, filter that booking_id and order by status_sequence; previous_status on each row gives the status held before that row.
+                  - Questions about how many bookings moved into a status over time count status transitions and should not filter is_current_status.
+
+                  ## DATA QUALITY NOTES
+                  - total_amount is the total value of the whole booking, not a per-night rate, and is single-precision FLOAT; cast to DECIMAL(20,2) before summing.
+                  - status_end_ts is NULL only on the current version of a booking.
+
+                  ## Instructions you must follow when providing summaries
+                  - State whether the answer reflects current bookings only, a point in time, or all status history.
+                  - State the date range used whenever the answer is time-filtered.

@@ -1,0 +1,18 @@
+resources:
+  sql_warehouses:
+    wanderbricks_bi:
+      # Named wanderbricks_bi, not wanderbricks_warehouse: an unrelated
+      # [dev bjamrozik] wanderbricks_warehouse already exists in the workspace,
+      # and SQL warehouse names must be unique per org.
+      name: wanderbricks_bi
+      # User-approved grant (explicit, out of normal scope): wanderbricks-viewers
+      # needs CAN_USE here to actually run queries on this warehouse, alongside
+      # its UC read access on the gold table declared in resources/wanderbricks.schema.yml.
+      permissions:
+        - level: CAN_USE
+          group_name: wanderbricks-viewers
+      cluster_size: 2X-Small
+      warehouse_type: PRO
+      enable_serverless_compute: true
+      auto_stop_mins: 10
+      max_num_clusters: 1

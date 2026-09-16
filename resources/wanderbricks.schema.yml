@@ -1,0 +1,15 @@
+resources:
+  schemas:
+    wanderbricks:
+      catalog_name: ${var.catalog}
+      name: ${var.wanderbricks_schema}
+      comment: Booking status history derived from samples.wanderbricks.
+      # No catalog-level grant here: the wanderbricks-viewers group already holds
+      # USE_CATALOG on databricks_user_group_aitoolkit (verified), so USE_SCHEMA +
+      # SELECT on this schema is the complete missing set, and nothing outside the
+      # schema is modified by this bundle.
+      grants:
+        - principal: wanderbricks-viewers
+          privileges:
+            - USE_SCHEMA
+            - SELECT

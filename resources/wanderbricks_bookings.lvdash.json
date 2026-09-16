@@ -1,0 +1,357 @@
+{
+  "datasets": [
+    {
+      "name": "ds_bookings",
+      "displayName": "Booking status history",
+      "queryLines": [
+        "SELECT g.booking_id, g.status, g.destination, g.country, g.continent, g.property_type,\n",
+        "       g.total_amount, g.status_start_ts, g.is_current_status, g.previous_status,\n",
+        "       CASE WHEN g.is_current_status THEN CAST(g.total_amount AS DECIMAL(20,2)) END AS current_revenue,\n",
+        "       CASE WHEN g.is_current_status THEN 1 ELSE 0 END AS is_current_flag,\n",
+        "       CASE WHEN g.is_current_status AND g.status = 'cancelled' THEN 1 ELSE 0 END AS is_current_cancelled,\n",
+        "       CASE WHEN t.destination IS NOT NULL THEN g.destination ELSE 'Other' END AS destination_group\n",
+        "FROM booking_status_gold g\n",
+        "LEFT JOIN (\n",
+        "  SELECT destination\n",
+        "  FROM booking_status_gold\n",
+        "  WHERE is_current_status\n",
+        "  GROUP BY destination\n",
+        "  ORDER BY SUM(total_amount) DESC\n",
+        "  LIMIT 10\n",
+        ") t ON g.destination = t.destination\n"
+      ],
+      "columns": [
+        {
+          "displayName": "Cancellation Rate",
+          "description": "Share of current bookings whose current status is cancelled",
+          "expression": "SUM(`is_current_cancelled`) * 1.0 / NULLIF(SUM(`is_current_flag`), 0)"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "overview",
+      "displayName": "Overview",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1",
+      "layout": [
+        {
+          "widget": {
+            "name": "title",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Wanderbricks — Booking Status History\n"
+              ]
+            }
+          },
+          "position": {"x": 0, "y": 0, "width": 12, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "subtitle",
+            "multilineTextboxSpec": {
+              "lines": [
+                "Every booking's status is tracked as an SCD Type 2 history. KPIs and the revenue chart count each booking **once**, at its current status; the trend chart shows every status transition over time. The date filter applies to status_start_ts, so narrowing it can drop current bookings whose status began outside the range — changing the Current Bookings and Current Revenue KPIs.\n"
+              ]
+            }
+          },
+          "position": {"x": 0, "y": 1, "width": 12, "height": 2}
+        },
+        {
+          "widget": {
+            "name": "kpi-current-bookings",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_bookings",
+                  "fields": [
+                    {"name": "sum(is_current_flag)", "expression": "SUM(`is_current_flag`)"},
+                    {"name": "monthly(status_start_ts)", "expression": "DATE_TRUNC(\"MONTH\", `status_start_ts`)"}
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(is_current_flag)",
+                  "displayName": "Bookings",
+                  "format": {
+                    "type": "number",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {"type": "max", "places": 1}
+                  }
+                },
+                "period": {"fieldName": "monthly(status_start_ts)"}
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Current Bookings",
+                "showDescription": true,
+                "description": "Distinct bookings, counted at their current status"
+              }
+            }
+          },
+          "position": {"x": 0, "y": 3, "width": 3, "height": 4}
+        },
+        {
+          "widget": {
+            "name": "kpi-current-revenue",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_bookings",
+                  "fields": [
+                    {"name": "sum(current_revenue)", "expression": "SUM(`current_revenue`)"},
+                    {"name": "monthly(status_start_ts)", "expression": "DATE_TRUNC(\"MONTH\", `status_start_ts`)"}
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(current_revenue)",
+                  "displayName": "Revenue",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "USD",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {"type": "max", "places": 2}
+                  }
+                },
+                "period": {"fieldName": "monthly(status_start_ts)"}
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Current Revenue",
+                "showDescription": true,
+                "description": "Booking value counted once per booking, at its current status"
+              }
+            }
+          },
+          "position": {"x": 3, "y": 3, "width": 3, "height": 4}
+        },
+        {
+          "widget": {
+            "name": "kpi-cancellation-rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_bookings",
+                  "fields": [
+                    {"name": "measure(Cancellation Rate)", "expression": "MEASURE(`Cancellation Rate`)"},
+                    {"name": "monthly(status_start_ts)", "expression": "DATE_TRUNC(\"MONTH\", `status_start_ts`)"}
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(Cancellation Rate)",
+                  "displayName": "Cancellation Rate",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {"type": "max", "places": 1}
+                  }
+                },
+                "period": {"fieldName": "monthly(status_start_ts)"}
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Cancellation Rate",
+                "showDescription": true,
+                "description": "Cancelled current bookings / all current bookings"
+              }
+            }
+          },
+          "position": {"x": 6, "y": 3, "width": 3, "height": 4}
+        },
+        {
+          "widget": {
+            "name": "filter-status-start-date",
+            "queries": [
+              {
+                "name": "ds_bookings_status_start_ts",
+                "query": {
+                  "datasetName": "ds_bookings",
+                  "fields": [
+                    {"name": "status_start_ts", "expression": "`status_start_ts`"}
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-date-range-picker",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "status_start_ts",
+                    "displayName": "Status start",
+                    "queryName": "ds_bookings_status_start_ts"
+                  }
+                ]
+              },
+              "frame": {"showTitle": true, "title": "Status Start Date"}
+            }
+          },
+          "position": {"x": 9, "y": 3, "width": 3, "height": 4}
+        },
+        {
+          "widget": {
+            "name": "section-charts",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Where the revenue sits, and how status moves\n"
+              ]
+            }
+          },
+          "position": {"x": 0, "y": 7, "width": 12, "height": 1}
+        },
+        {
+          "widget": {
+            "name": "revenue-by-destination",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_bookings",
+                  "fields": [
+                    {"name": "destination_group", "expression": "`destination_group`"},
+                    {"name": "sum(current_revenue)", "expression": "SUM(`current_revenue`)"}
+                  ],
+                  "disaggregated": false,
+                  "orders": [
+                    {"direction": "DESC", "expression": "SUM(`current_revenue`)"}
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "destination_group",
+                  "displayName": "Destination",
+                  "scale": {"type": "categorical"}
+                },
+                "y": {
+                  "fieldName": "sum(current_revenue)",
+                  "displayName": "Revenue (USD)",
+                  "scale": {"type": "quantitative"},
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "USD",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {"type": "max", "places": 1}
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Revenue by Destination (current bookings only)",
+                "showDescription": true,
+                "description": "Top 10 destinations by current revenue; all others rolled into \"Other\". Clicking the \"Other\" bar cross-filters to all 32 tail destinations at once, not to a single destination."
+              }
+            }
+          },
+          "position": {"x": 0, "y": 8, "width": 6, "height": 6}
+        },
+        {
+          "widget": {
+            "name": "booking-status-over-time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_bookings",
+                  "fields": [
+                    {"name": "monthly(status_start_ts)", "expression": "DATE_TRUNC(\"MONTH\", `status_start_ts`)"},
+                    {"name": "count(booking_id)", "expression": "COUNT(`booking_id`)"},
+                    {"name": "status", "expression": "`status`"}
+                  ],
+                  "disaggregated": false,
+                  "orders": [
+                    {"direction": "ASC", "expression": "DATE_TRUNC(\"MONTH\", `status_start_ts`)"}
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(status_start_ts)",
+                  "displayName": "Month",
+                  "scale": {"type": "temporal"}
+                },
+                "y": {
+                  "fieldName": "count(booking_id)",
+                  "displayName": "Status changes",
+                  "scale": {"type": "quantitative"}
+                },
+                "color": {
+                  "fieldName": "status",
+                  "displayName": "Status",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {"value": "completed", "color": "#009E73"},
+                      {"value": "confirmed", "color": "#0072B2"},
+                      {"value": "pending", "color": "#E69F00"},
+                      {"value": "cancelled", "color": "#D55E00"}
+                    ]
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Booking Status Over Time",
+                "showDescription": true,
+                "description": "Status transitions per month, across the full SCD2 history."
+              }
+            }
+          },
+          "position": {"x": 6, "y": 8, "width": 6, "height": 6}
+        }
+      ]
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {"light": "#FCFCFC", "dark": "#1F272D"},
+      "widgetBackgroundColor": {"light": "#FFFFFF", "dark": "#11171C"},
+      "widgetBorderColor": {"light": "#FFFFFF", "dark": "#11171C"},
+      "fontColor": {"light": "#11171C", "dark": "#E8ECF0"},
+      "selectionColor": {"light": "#2272B4", "dark": "#8ACAFF"},
+      "visualizationColors": [
+        "#0072B2",
+        "#E69F00",
+        "#009E73",
+        "#CC79A7",
+        "#D55E00",
+        "#56B4E9",
+        "#4E5185"
+      ],
+      "widgetHeaderAlignment": "LEFT"
+    }
+  }
+}
